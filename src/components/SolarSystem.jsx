@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+// import Drawer from '@mui/material/Drawer';
+
 import sunImg from "./textures/sun.jpg";
 import mercuryImg from "./textures/mercury.jpg";
 import venusImg from "./textures/venus.jpg";
@@ -10,6 +12,7 @@ import marsImg from "./textures/mars.jpg";
 import jupiterImg from "./textures/jupiter.jpg";
 import uranusImg from "./textures/uranus.jpg";
 import neptuneImg from "./textures/neptune.jpg";
+import starfieldImg from "./textures/starfield.jpg";
 import {
     mercuryElements,
     venusElements,
@@ -28,6 +31,18 @@ import {
     uranusRates,
     neptuneRates
 } from './PlanetsData';
+
+// Define your planet descriptions
+const planetDescriptions = {
+    Mercury: "Mercury is the closest planet to the Sun...",
+    Venus: "Venus is the second planet from the Sun...",
+    Earth: "Earth is our home planet...",
+    Mars: "Mars is the fourth planet from the Sun...",
+    Jupiter: "Jupiter is the largest planet in our solar system...",
+    Saturn: "Saturn is known for its ring system...",
+    Uranus: "Uranus is an ice giant...",
+    Neptune: "Neptune is the farthest planet from the Sun...",
+};
 
 // Keplerian element calculations for planet positions
 const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) => {
@@ -69,6 +84,11 @@ const SolarSystem = () => {
     const mountRef = useRef(null);
     const [rotationSpeed, setRotationSpeed] = useState(0.1);
     const [cameraTarget, setCameraTarget] = useState(null);
+    const [drawerOpen, setDrawerOpen] = useState(false);  // State for drawer visibility
+    const [selectedPlanet, setSelectedPlanet] = useState(null); // State for selected planet
+    const raycaster = new THREE.Raycaster();
+    const mouse = new THREE.Vector2();
+
 
     useEffect(() => {
         const scene = new THREE.Scene();
@@ -80,7 +100,8 @@ const SolarSystem = () => {
         currentMount.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        camera.position.z = 100;
+        // camera.position.z = 100;
+        camera.position.set(-10, -120, 60);
         controls.enableDamping = true;
         controls.dampingFactor = 0.25;
 
@@ -91,6 +112,12 @@ const SolarSystem = () => {
         const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
         const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
         scene.add(sunMesh);
+
+        // const starGeomety = new THREE.SphereGeometry(3000, 64, 64);
+        // const starTexture = textureLoader.load(starfieldImg);
+        // const starMaterial = new THREE.MeshBasicMaterial({ map: starTexture, side: THREE.BackSide });
+        // const starMesh = new THREE.Mesh(starGeomety, starMaterial);
+        // scene.add(starMesh);
 
         const planets = [
             { name: 'Mercury', mesh: mercuryImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
@@ -110,6 +137,8 @@ const SolarSystem = () => {
             const planetTexture = textureLoaderPlanet.load(planet.mesh);
             const material = new THREE.MeshBasicMaterial({ map: planetTexture });
             const planetMesh = new THREE.Mesh(geometry, material);
+            planetMesh.name = planet.name; // Name the mesh
+
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
 
@@ -171,7 +200,30 @@ const SolarSystem = () => {
 
         animate();
 
+        const handleMouseClick = (event) => {
+            // Update mouse vector with normalized screen coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+
+            // Set up the raycaster to intersect objects
+            raycaster.setFromCamera(mouse, camera);
+            console.log("hi iam hossam");
+            
+
+            const intersects = raycaster.intersectObjects(planetMeshes);
+            if (intersects.length > 0) {
+                const clickedPlanet = intersects[0].object;
+                setSelectedPlanet(clickedPlanet.name);
+                setDrawerOpen(true); // Open the drawer
+            }
+        };
+
+        window.addEventListener('click', handleMouseClick);
+
+
         return () => {
+            window.removeEventListener('click', handleMouseClick);
+
             currentMount.removeChild(renderer.domElement);
         };
     }, [rotationSpeed, cameraTarget]);
@@ -194,46 +246,39 @@ const SolarSystem = () => {
                 {['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].map((planet, index) => (
                     <button
                         key={planet}
-                        onClick={() => setCameraTarget(index)} // Focus on the clicked planet
-                        style={{
-                            margin: '5px',
-                            padding: '10px',
-                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                            border: 'none',
-                            borderRadius: '5px',
-                            cursor: 'pointer',
-                            color: 'white',
-                            transition: '0.3s',
-                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
-                        }}
-                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'}
-                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+                        onClick={() => setCameraTarget(index)}
+                        style={buttonStyle}
                     >
                         {planet}
                     </button>
                 ))}
                 <button
-                    onClick={() => setCameraTarget(null)} // Return to normal mode
-                    style={{
-                        margin: '5px',
-                        padding: '10px',
-                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
-                        border: 'none',
-                        borderRadius: '5px',
-                        cursor: 'pointer',
-                        color: 'white',
-                        transition: '0.3s',
-                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'}
-                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+                    onClick={() => setCameraTarget(null)}
+                    style={buttonStyle}
                 >
                     Normal Mode
                 </button>
             </div>
+
+            {/* Drawer for planet details */}
+            
             {/* <img src={sunImg} alt="" /> */}
         </div>
     );
+};
+
+const buttonStyle = {
+    margin: '5px',
+    padding: '10px',
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    border: 'none',
+    borderRadius: '5px',
+    cursor: 'pointer',
+    color: 'white',
+    transition: '0.3s',
+    boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+    onMouseOver: (e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'),
+    onMouseOut: (e) => (e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'),
 };
 
 export default SolarSystem;
