@@ -1,165 +1,168 @@
-import React, { useRef, useEffect } from 'react';
+import React, { useEffect, useRef } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import {
+    mercuryElements,
+    venusElements,
+    earthElements,
+    marsElements,
+    jupiterElements,
+    saturnElements,
+    uranusElements,
+    neptuneElements,
+    mercuryRates,
+    venusRates,
+    earthRates,
+    marsRates,
+    jupiterRates,
+    saturnRates,
+    uranusRates,
+    neptuneRates
+} from './PlanetsData';
 
-// Load textures using require
-const sunTextureImg = require('./textures/sun.jpg');
-const mercuryTextureImg = require('./textures/mercury.jpg');
-const venusTextureImg = require('./textures/venus.jpg');
-const earthTextureImg = require('./textures/earth.jpg');
-const marsTextureImg = require('./textures/mars.jpg');
-const jupiterTextureImg = require('./textures/jupiter.jpg');
-const saturnTextureImg = require('./textures/saturn.jpg');
-const uranusTextureImg = require('./textures/uranus.jpg');
-const neptuneTextureImg = require('./textures/neptune.jpg');
+// Keplerian element calculations for planet positions
+const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) => {
+    const T = (epoch - 2451545.0) / 36525; // Centuries past J2000.0
 
-const AU = 149597870.7; // Astronomical Unit in kilometers
-const scaleDistance = 1 / AU * 50; // Scale factor for distances
-const scaleSize = 1 / 10000; // Scale factor for planet sizes
+    // Update the orbital elements using the rates of change
+    const updatedL = L + T * rates.L_rate; // Mean longitude
+    const updatedA = a + T * rates.a_rate; // Semi-major axis
+    const updatedE = e + T * rates.e_rate; // Eccentricity
+    const updatedI = I + T * rates.I_rate; // Inclination
+    const updatedPeri = longPeri + T * rates.longPeri_rate; // Longitude of perihelion
+    const updatedNode = longNode + T * rates.longNode_rate; // Longitude of ascending node
+
+    // Calculate mean anomaly
+    let M = updatedL - updatedPeri;
+    M = M % (2 * Math.PI); // Normalize to 0-2π
+
+    // Initial guess for eccentric anomaly
+    let E = M;
+
+    // Solve Kepler's equation iteratively for E
+    for (let i = 0; i < 10; i++) {
+        E = M + updatedE * Math.sin(E);
+    }
+
+    // Heliocentric coordinates in the orbital plane
+    const x = updatedA * (Math.cos(E) - updatedE);
+    const y = updatedA * Math.sqrt(1 - updatedE * updatedE) * Math.sin(E);
+
+    // Convert to 3D space using inclination and node
+    const cosI = Math.cos(updatedI);
+    const sinI = Math.sin(updatedI);
+    const cosNode = Math.cos(updatedNode);
+    const sinNode = Math.sin(updatedNode);
+    const cosPeri = Math.cos(updatedPeri);
+    const sinPeri = Math.sin(updatedPeri);
+
+    const xPos = x * (cosNode * cosPeri - sinNode * sinPeri * cosI) - y * (sinNode * cosPeri + cosNode * sinPeri * cosI);
+    const yPos = x * (sinNode * cosPeri + cosNode * sinPeri * cosI) + y * (cosNode * cosPeri - sinNode * sinPeri * cosI);
+    const zPos = y * sinI * Math.sin(E);
+
+    return { x: xPos, y: yPos, z: zPos };
+};
 
 const SolarSystem = () => {
     const mountRef = useRef(null);
 
     useEffect(() => {
-        let width = window.innerWidth;
-        let height = window.innerHeight;
-        let frameId;
-
         const scene = new THREE.Scene();
-        const camera = new THREE.PerspectiveCamera(75, width / height, 0.1, 10000);
-        camera.position.z = 200;
-
-        const renderer = new THREE.WebGLRenderer({ antialias: true });
-        renderer.setSize(width, height);
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.051, 3000);
+        const renderer = new THREE.WebGLRenderer();
+        renderer.setSize(window.innerWidth, window.innerHeight);
         mountRef.current.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        controls.enableDamping = true;
-        controls.dampingFactor = 0.3;
+        camera.position.z = 100;
+        controls.update();
 
         // Add Sun
-        const sunTexture = new THREE.TextureLoader().load(sunTextureImg);
-        const sunGeometry = new THREE.SphereGeometry(696340 * scaleSize * 0.4, 32, 32); // Scaled radius of the Sun
-        const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
-        const sun = new THREE.Mesh(sunGeometry, sunMaterial);
-        scene.add(sun);
+        const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
+        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+        scene.add(sunMesh);
 
-        // Create a star geometry for instancing
-        const starGeometry = new THREE.SphereGeometry(0.1, 8, 8); // Small sphere for stars
-        const starMaterial = new THREE.MeshBasicMaterial({
-            color: 0xadd8e6,
-            emissive: 0xadd8e6, // Emissive color for glowing effect
-            transparent: true,
-            opacity: 0.8,
-        }); // Light blue color
-
-        const starCount = 10000; // Number of stars
-        const stars = new THREE.InstancedMesh(starGeometry, starMaterial, starCount);
-
-        // Position the stars randomly in space
-        const dummy = new THREE.Object3D();
-        for (let i = 0; i < starCount; i++) {
-            const x = (Math.random() - 0.5) * 2000; // Random position in x
-            const y = (Math.random() - 0.5) * 2000; // Random position in y
-            const z = (Math.random() - 0.5) * 2000; // Random position in z
-
-            dummy.position.set(x, y, z);
-            dummy.updateMatrix(); // Update the matrix for this instance
-            stars.setMatrixAt(i, dummy.matrix); // Set the matrix for the instance
-        }
-        scene.add(stars); // Add all stars to the scene
-
-        // Add lights
-        const sunLight = new THREE.PointLight(0xffffff, 1, 1000); // Light to illuminate the planets
-        sunLight.position.set(0, 0, 0);
-        scene.add(sunLight);
-
-        const ambientLight = new THREE.AmbientLight(0x404040, 1); // Soft ambient light
-        scene.add(ambientLight);
-
-        // Realistic planet data with axial tilts (in degrees)
-        const planetsData = [
-            { name: 'Mercury', radius: 2439.7, distance: 57910000, angle: 0, tilt: 0.034, texture: mercuryTextureImg },
-            { name: 'Venus', radius: 6051.8, distance: 108200000, angle: Math.PI / 2, tilt: 177.4, texture: venusTextureImg },
-            { name: 'Earth', radius: 6371, distance: 149600000, angle: Math.PI, tilt: 23.44, texture: sunTextureImg },
-            { name: 'Mars', radius: 3389.5, distance: 227900000, angle: (3 * Math.PI) / 2, tilt: 25.19, texture: marsTextureImg },
-            { name: 'Jupiter', radius: 69911, distance: 778300000, angle: 0, tilt: 3.13, texture: jupiterTextureImg },
-            { name: 'Saturn', radius: 58232, distance: 1427000000, angle: Math.PI / 2, tilt: 26.73, texture: saturnTextureImg },
-            { name: 'Uranus', radius: 25362, distance: 2871000000, angle: Math.PI, tilt: 97.77, texture: uranusTextureImg },
-            { name: 'Neptune', radius: 24622, distance: 4495000000, angle: (3 * Math.PI) / 2, tilt: 28.32, texture: neptuneTextureImg },
+        // Create planets and orbit paths
+        const planets = [
+            { name: 'Mercury', elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
+            { name: 'Venus', elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
+            { name: 'Earth', elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
+            { name: 'Earth', elements: marsElements, rates: marsRates, color: 0x0000ff, scale: 1 },
+            { name: 'Earth', elements: jupiterElements, rates: jupiterRates, color: 0x0000ff, scale: 1 },
+            { name: 'Venus', elements: saturnElements, rates: saturnRates, color: 0xffcc33, scale: 1 },
+            { name: 'Mercury', elements: uranusElements, rates: uranusRates, color: 0xaaaaaa, scale: 0.5 },
+            { name: 'Earth', elements: neptuneElements, rates: neptuneRates, color: 0x0000ff, scale: 1 },
         ];
 
-        const planets = [];
-        planetsData.forEach((planetData) => {
-            const planetTexture = new THREE.TextureLoader().load(planetData.texture);
-            const planetGeometry = new THREE.SphereGeometry(planetData.radius * scaleSize, 32, 32);
-            const planetMaterial = new THREE.MeshPhongMaterial({ map: planetTexture });
-            const planetMesh = new THREE.Mesh(planetGeometry, planetMaterial);
-
-            // Set initial position based on angle
-            planetMesh.position.x = planetData.distance * scaleDistance * Math.cos(planetData.angle);
-            planetMesh.position.z = planetData.distance * scaleDistance * Math.sin(planetData.angle);
-
-            // Apply tilt to the planet's orbit
-            planetMesh.rotation.y = THREE.MathUtils.degToRad(planetData.tilt);
+        const planetMeshes = [];
+        planets.forEach(planet => {
+            const geometry = new THREE.SphereGeometry(planet.scale, 32, 32);
+            const material = new THREE.MeshBasicMaterial({ color: planet.color });
+            const planetMesh = new THREE.Mesh(geometry, material);
+            planetMeshes.push(planetMesh);
             scene.add(planetMesh);
 
-            // Add a point light for each planet
-            const planetLight = new THREE.PointLight(0xffffff, 0.5, 100); // Adjust intensity and distance as needed
-            planetLight.position.copy(planetMesh.position); // Position the light at the planet's location
-            scene.add(planetLight);
-
             // Create orbit line
-            const orbitGeometry = new THREE.CircleGeometry(planetData.distance * scaleDistance, 64);
-            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0xffffff, opacity: 0.5, transparent: true });
-            const orbitLine = new THREE.LineLoop(orbitGeometry, orbitMaterial);
-            orbitLine.rotation.x = Math.PI / 2; // Rotate the orbit line to lie flat
-            orbitLine.rotation.y = THREE.MathUtils.degToRad(planetData.tilt); // Apply tilt to the orbit
-            // scene.add(orbitLine);    
+            const orbitPoints = [];
+            for (let i = 0; i <= 360; i++) {
+                const theta = (i * Math.PI) / 180;
+                const position = calculatePlanetPosition(
+                    planet.elements.a,
+                    planet.elements.e,
+                    planet.elements.I,
+                    planet.elements.L + theta,
+                    planet.elements.longPeri,
+                    planet.elements.longNode,
+                    2451545.0, // Base epoch (replace this with real-time logic later)
+                    planet.rates
+                );
+                orbitPoints.push(new THREE.Vector3(position.x * 50, position.y * 50, position.z * 50));
+            }
 
-            planets.push({ mesh: planetMesh, distance: planetData.distance * scaleDistance });
+            const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x888888 });
+            const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
+            scene.add(orbitLine);
         });
 
-        const animate = () => {
-            planets.forEach((planet, index) => {
-                const angleSpeed = 0.001; // Control the speed of rotation
-                const angle = Date.now() * angleSpeed * (index + 1);
-                planet.mesh.position.x = planet.distance * Math.cos(angle);
-                planet.mesh.position.z = planet.distance * Math.sin(angle);
-                planet.mesh.rotation.y += 0.01;
+        const pointLight = new THREE.PointLight(0xffffff, 1, 1000);
+        pointLight.position.set(0, 0, 0);
+        scene.add(pointLight);
 
-                // Update the position of the planet's light
-                const light = scene.children.find(child => child instanceof THREE.PointLight && child.position.equals(planet.mesh.position));
-                if (light) {
-                    light.position.copy(planet.mesh.position);
-                }
+        // Animation loop
+        const animate = () => {
+            requestAnimationFrame(animate);
+
+            const epoch = 2451545.0; // Placeholder for time-based updates
+
+            planets.forEach((planet, idx) => {
+                const position = calculatePlanetPosition(
+                    planet.elements.a,
+                    planet.elements.e,
+                    planet.elements.I,
+                    planet.elements.L,
+                    planet.elements.longPeri,
+                    planet.elements.longNode,
+                    epoch,
+                    planet.rates
+                );
+
+                planetMeshes[idx].position.set(position.x * 50, position.y * 50, position.z * 50);
             });
 
             controls.update();
             renderer.render(scene, camera);
-            frameId = window.requestAnimationFrame(animate);
         };
 
         animate();
 
-        const handleResize = () => {
-            width = window.innerWidth;
-            height = window.innerHeight;
-            renderer.setSize(width, height);
-            camera.aspect = width / height;
-            camera.updateProjectionMatrix();
-        };
-
-        window.addEventListener('resize', handleResize);
-
         return () => {
-            window.removeEventListener('resize', handleResize);
-            window.cancelAnimationFrame(frameId);
             mountRef.current.removeChild(renderer.domElement);
         };
     }, []);
 
-    return <div ref={mountRef} style={{ width: '100%', height: '100vh' }} />;
+    return <div ref={mountRef} />;
 };
 
 export default SolarSystem;
