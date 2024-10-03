@@ -1,6 +1,14 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import sunImg from "./textures/sun.jpg";
+import venusImg from "./textures/venus.jpg";
+import earthImg from "./textures/earth.jpg";
+import saturnImg from "./textures/saturn.jpg";
+import marsImg from "./textures/mars.jpg";
+import jupiterImg from "./textures/jupiter.jpg";
+import uranusImg from "./textures/uranus.jpg";
+import neptuneImg from "./textures/neptune.jpg";
 import {
     mercuryElements,
     venusElements,
@@ -65,6 +73,8 @@ const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) =
 
 const SolarSystem = () => {
     const mountRef = useRef(null);
+    const [rotationSpeed, setRotationSpeed] = useState(0.1);
+    const [cameraTarget, setCameraTarget] = useState(null); // State to track the focused planet
 
     useEffect(() => {
         const scene = new THREE.Scene();
@@ -74,34 +84,48 @@ const SolarSystem = () => {
         mountRef.current.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        camera.position.z = 100;
-        controls.update();
+        camera.position.z = 100; // Initial camera position
+        controls.enableDamping = true; // Smooth movement
+        controls.dampingFactor = 0.25;
 
         // Add Sun
+        // const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
+        // const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        // const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
+        // scene.add(sunMesh);
+        // Load Sun texture
+        const textureLoader = new THREE.TextureLoader();
+        const sunTexture = textureLoader.load(sunImg); // Update with your texture path
+
+        // Add Sun with texture
         const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
-        const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+        const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture }); // Use texture for the Sun
         const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
         scene.add(sunMesh);
 
         // Create planets and orbit paths
         const planets = [
-            { name: 'Mercury', elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
-            { name: 'Venus', elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
-            { name: 'Earth', elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
-            { name: 'Mars', elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
-            { name: 'Jupiter', elements: jupiterElements, rates: jupiterRates, color: 0xffcc00, scale: 1.5 },
-            { name: 'Saturn', elements: saturnElements, rates: saturnRates, color: 0xffcc99, scale: 1.2 },
-            { name: 'Uranus', elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
-            { name: 'Neptune', elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
+            { name: 'Mercury', mesh: sunImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
+            { name: 'Venus', mesh: venusImg, elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
+            { name: 'Earth', mesh: earthImg, elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
+            { name: 'Mars', mesh: marsImg, elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
+            { name: 'Jupiter', mesh: jupiterImg, elements: jupiterElements, rates: jupiterRates, color: 0xffcc00, scale: 1.5 },
+            { name: 'Saturn', mesh: saturnImg, elements: saturnElements, rates: saturnRates, color: 0xffcc99, scale: 1.2 },
+            { name: 'Uranus', mesh: uranusImg, elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
+            { name: 'Neptune', mesh: neptuneImg, elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
         ];
 
         const planetMeshes = [];
         planets.forEach(planet => {
             const geometry = new THREE.SphereGeometry(planet.scale, 32, 32);
-            const material = new THREE.MeshBasicMaterial({ color: planet.color });
+            const textureLoaderPlanet = new THREE.TextureLoader();
+            const texteur = textureLoaderPlanet.load(planet.mesh); // Update with your texture path
+            // const material = new THREE.MeshBasicMaterial({ color: planet.color });
+            const material = new THREE.MeshBasicMaterial({ map: texteur }); // Use texture for the Sun
             const planetMesh = new THREE.Mesh(geometry, material);
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
+
 
             // Create orbit line
             const orbitPoints = [];
@@ -135,8 +159,8 @@ const SolarSystem = () => {
         const animate = () => {
             requestAnimationFrame(animate);
 
-            // Increment epoch to simulate time passing
-            epoch += 0.1; // Adjust this value to speed up or slow down the rotation
+            // Increment epoch to simulate time passing, controlled by rotationSpeed
+            epoch += rotationSpeed;
 
             planets.forEach((planet, idx) => {
                 const position = calculatePlanetPosition(
@@ -153,6 +177,14 @@ const SolarSystem = () => {
                 planetMeshes[idx].position.set(position.x * 50, position.y * 50, position.z * 50);
             });
 
+            // If a camera target is set, move the camera towards it
+            if (cameraTarget !== null) {
+                const targetPosition = planetMeshes[cameraTarget].position.clone();
+                camera.position.copy(targetPosition).add(new THREE.Vector3(0, 0, 20)); // Adjust distance as needed
+                controls.target.copy(targetPosition); // Update control target to the focused planet
+                controls.update(); // Update controls after modifying the target
+            }
+
             controls.update();
             renderer.render(scene, camera);
         };
@@ -160,11 +192,71 @@ const SolarSystem = () => {
         animate();
 
         return () => {
-            mountRef.current.removeChild(renderer.domElement);
+            const mountElement = mountRef.current;
+            if (mountElement) {
+                mountElement.removeChild(renderer.domElement);
+            }
         };
-    }, []);
+    }, [rotationSpeed, cameraTarget]); // Depend on rotationSpeed and cameraTarget
 
-    return <div ref={mountRef} />;
+    return (
+        <div ref={mountRef}>
+            <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1000, color: 'white' }}>
+                Speed:
+                <input
+                    type="range"
+                    min="0"
+                    max="2"
+                    step="0.01"
+                    value={rotationSpeed}
+                    onChange={(e) => setRotationSpeed(parseFloat(e.target.value))}
+                    style={{ marginLeft: '10px', verticalAlign: 'middle' }}
+                />
+            </div>
+            <div style={{ position: 'absolute', top: '50px', left: '10px', zIndex: 1000, color: 'white' }}>
+                {['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].map((planet, index) => (
+                    <button
+                        key={planet}
+                        onClick={() => setCameraTarget(index)} // Focus on the clicked planet
+                        style={{
+                            margin: '5px',
+                            padding: '10px',
+                            backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                            border: 'none',
+                            borderRadius: '5px',
+                            cursor: 'pointer',
+                            color: 'white',
+                            transition: '0.3s',
+                            boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+                        }}
+                        onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'}
+                        onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+                    >
+                        {planet}
+                    </button>
+                ))}
+                <button
+                    onClick={() => setCameraTarget(null)} // Return to normal mode
+                    style={{
+                        margin: '5px',
+                        padding: '10px',
+                        backgroundColor: 'rgba(255, 255, 255, 0.2)',
+                        border: 'none',
+                        borderRadius: '5px',
+                        cursor: 'pointer',
+                        color: 'white',
+                        transition: '0.3s',
+                        boxShadow: '0 4px 8px rgba(0, 0, 0, 0.5)',
+                    }}
+                    onMouseOver={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.5)'}
+                    onMouseOut={(e) => e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.2)'}
+                >
+                    Normal Mode
+                </button>
+            </div>
+            {/* <img src={sunImg} alt="" /> */}
+        </div>
+    );
 };
 
 export default SolarSystem;
