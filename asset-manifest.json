@@ -1,0 +1,24 @@
+{
+  "files": {
+    "main.css": "/nasa-project-v-1/static/css/main.a32c3a1d.css",
+    "main.js": "/nasa-project-v-1/static/js/main.ba7c0459.js",
+    "static/js/453.06a357ec.chunk.js": "/nasa-project-v-1/static/js/453.06a357ec.chunk.js",
+    "static/media/venus.jpg": "/nasa-project-v-1/static/media/venus.4b03f2d64e23f1c2b6a0.jpg",
+    "static/media/mercury.jpg": "/nasa-project-v-1/static/media/mercury.8f80953b60adac9859cd.jpg",
+    "static/media/sun.jpg": "/nasa-project-v-1/static/media/sun.4b569137334e61081651.jpg",
+    "static/media/mars.jpg": "/nasa-project-v-1/static/media/mars.33960f5af615e67309e5.jpg",
+    "static/media/jupiter.jpg": "/nasa-project-v-1/static/media/jupiter.3e84533e157949a99de4.jpg",
+    "static/media/earth.jpg": "/nasa-project-v-1/static/media/earth.981cc3e3660e809249a3.jpg",
+    "static/media/neptune.jpg": "/nasa-project-v-1/static/media/neptune.6dd112666aad0cd68958.jpg",
+    "static/media/saturn.jpg": "/nasa-project-v-1/static/media/saturn.3b074d8e6087d14e4225.jpg",
+    "static/media/uranus.jpg": "/nasa-project-v-1/static/media/uranus.428ad3f979bd783a27d1.jpg",
+    "index.html": "/nasa-project-v-1/index.html",
+    "main.a32c3a1d.css.map": "/nasa-project-v-1/static/css/main.a32c3a1d.css.map",
+    "main.ba7c0459.js.map": "/nasa-project-v-1/static/js/main.ba7c0459.js.map",
+    "453.06a357ec.chunk.js.map": "/nasa-project-v-1/static/js/453.06a357ec.chunk.js.map"
+  },
+  "entrypoints": [
+    "static/css/main.a32c3a1d.css",
+    "static/js/main.ba7c0459.js"
+  ]
+}
