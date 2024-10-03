@@ -95,7 +95,7 @@ const SolarSystem = () => {
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.051, 3000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        
+
         const currentMount = mountRef.current;
         currentMount.appendChild(renderer.domElement);
 
@@ -103,7 +103,7 @@ const SolarSystem = () => {
         // camera.position.z = 100;
         camera.position.set(-10, -120, 60);
         controls.enableDamping = true;
-        controls.dampingFactor = 0.25;
+        controls.dampingFactor = 0.05;  // amir comment >> this value makes the motion smooth بالعربي بتخلي لما تحرك بالموس و تسيب مش بيقف مره واحده
 
         const textureLoader = new THREE.TextureLoader();
         const sunTexture = textureLoader.load(sunImg);
@@ -131,13 +131,14 @@ const SolarSystem = () => {
         ];
 
         const planetMeshes = [];
-        planets.forEach(planet => {
+        planets.forEach((planet, index) => {
             const geometry = new THREE.SphereGeometry(planet.scale, 32, 32);
             const textureLoaderPlanet = new THREE.TextureLoader();
             const planetTexture = textureLoaderPlanet.load(planet.mesh);
             const material = new THREE.MeshBasicMaterial({ map: planetTexture });
             const planetMesh = new THREE.Mesh(geometry, material);
             planetMesh.name = planet.name; // Name the mesh
+            planetMesh.index = index;  // amir comment: index to determine which planet to focus on when clicked
 
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
@@ -187,14 +188,48 @@ const SolarSystem = () => {
                 planetMeshes[idx].position.set(position.x * 50, position.y * 50, position.z * 50);
             });
 
+
+            // camer stuff ///////////////////////////////////////////////////////////////////////////
+
+            // if (cameraTarget !== null) {
+            //     // Clone the target planet's position
+            //     const targetPosition = planetMeshes[cameraTarget].position.clone();
+
+            //     // Adjust offsets for the camera position
+            //     const distanceOffset = 50; // Distance from the planet to see the surrounding objects
+            //     const heightOffset = 15;    // Height above the target planet
+            //     const lateralOffset = -90;   // Move the camera to the side of the planet
+
+            //     // Set the camera position using the offsets
+            //     camera.position.copy(targetPosition)
+            //         .add(new THREE.Vector3(lateralOffset, heightOffset, distanceOffset));
+
+            //     // Update controls target to the target planet's position
+            //     controls.target.copy(targetPosition);
+            //     controls.update();
+            // }
+
+            // if (cameraTarget !== null) {
+            //     const targetPlanet = planetMeshes[cameraTarget];
+            //     if (targetPlanet) {
+            //         const targetPosition = targetPlanet.position.clone().add(new THREE.Vector3(10, 10,20)); // Adjust camera position offset
+            //         camera.position.lerp(targetPosition, 0.1); // Smoothly move the camera
+            //         camera.lookAt(targetPlanet.position);
+            //     }
+            // }
+
+
             if (cameraTarget !== null) {
-                const targetPosition = planetMeshes[cameraTarget].position.clone();
-                camera.position.copy(targetPosition).add(new THREE.Vector3(0, 0, 20));
-                controls.target.copy(targetPosition);
-                controls.update();
+                const targetPlanet = planetMeshes[cameraTarget];
+                if (targetPlanet) {
+                    controls.target.copy(targetPlanet.position); // Keep the target updated
+                    // const targetPosition = targetPlanet.position.clone().add(new THREE.Vector3(10, 10,10));
+                    // camera.position.lerp(targetPosition, 0.1); // Smoothly move the camera
+                    // camera.position.lerp(targetPlanet.position, 0.1); // Smoothly move the camera
+                    controls.update(); // Update controls to reflect the target position
+                }
             }
 
-            controls.update();
             renderer.render(scene, camera);
         };
 
@@ -207,14 +242,19 @@ const SolarSystem = () => {
 
             // Set up the raycaster to intersect objects
             raycaster.setFromCamera(mouse, camera);
-            console.log("hi iam hossam");
-            
+
 
             const intersects = raycaster.intersectObjects(planetMeshes);
             if (intersects.length > 0) {
                 const clickedPlanet = intersects[0].object;
                 setSelectedPlanet(clickedPlanet.name);
+                console.log(clickedPlanet)
+                console.log(clickedPlanet.name)
                 setDrawerOpen(true); // Open the drawer
+                // console.log("hi iam hossam");
+                // //////////////////////////////////////////////
+                setRotationSpeed(0.0)
+                setCameraTarget(clickedPlanet.index)
             }
         };
 
@@ -238,30 +278,30 @@ const SolarSystem = () => {
                     max="2"
                     step="0.01"
                     value={rotationSpeed}
-                    onChange={(e) => setRotationSpeed(parseFloat(e.target.value))}
+                    onChange={(e) => {
+                        setRotationSpeed(parseFloat(e.target.value))
+                        console.log("spead of rotatoion: ", parseFloat(e.target.value))
+                    }}
                     style={{ marginLeft: '10px', verticalAlign: 'middle' }}
                 />
             </div>
             <div style={{ position: 'absolute', top: '50px', left: '10px', zIndex: 1000, color: 'white' }}>
-                {['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].map((planet, index) => (
-                    <button
-                        key={planet}
-                        onClick={() => setCameraTarget(index)}
-                        style={buttonStyle}
-                    >
-                        {planet}
-                    </button>
-                ))}
                 <button
                     onClick={() => setCameraTarget(null)}
                     style={buttonStyle}
                 >
                     Normal Mode
                 </button>
+                <button
+                    onClick={() => setRotationSpeed(0.2)} // amir comment, when clicked, it return from the stat position to the rotate  position
+                    style={buttonStyle}
+                >
+                    return
+                </button>
             </div>
 
             {/* Drawer for planet details */}
-            
+
             {/* <img src={sunImg} alt="" /> */}
         </div>
     );
