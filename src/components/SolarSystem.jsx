@@ -88,11 +88,11 @@ const SolarSystem = () => {
             { name: 'Mercury', elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
             { name: 'Venus', elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
             { name: 'Earth', elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
-            { name: 'Earth', elements: marsElements, rates: marsRates, color: 0x0000ff, scale: 1 },
-            { name: 'Earth', elements: jupiterElements, rates: jupiterRates, color: 0x0000ff, scale: 1 },
-            { name: 'Venus', elements: saturnElements, rates: saturnRates, color: 0xffcc33, scale: 1 },
-            { name: 'Mercury', elements: uranusElements, rates: uranusRates, color: 0xaaaaaa, scale: 0.5 },
-            { name: 'Earth', elements: neptuneElements, rates: neptuneRates, color: 0x0000ff, scale: 1 },
+            { name: 'Mars', elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
+            { name: 'Jupiter', elements: jupiterElements, rates: jupiterRates, color: 0xffcc00, scale: 1.5 },
+            { name: 'Saturn', elements: saturnElements, rates: saturnRates, color: 0xffcc99, scale: 1.2 },
+            { name: 'Uranus', elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
+            { name: 'Neptune', elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
         ];
 
         const planetMeshes = [];
@@ -131,10 +131,12 @@ const SolarSystem = () => {
         scene.add(pointLight);
 
         // Animation loop
+        let epoch = 2451545.0; // Starting epoch
         const animate = () => {
             requestAnimationFrame(animate);
 
-            const epoch = 2451545.0; // Placeholder for time-based updates
+            // Increment epoch to simulate time passing
+            epoch += 0.1; // Adjust this value to speed up or slow down the rotation
 
             planets.forEach((planet, idx) => {
                 const position = calculatePlanetPosition(
