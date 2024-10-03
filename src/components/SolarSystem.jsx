@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 import sunImg from "./textures/sun.jpg";
+import mercuryImg from "./textures/mercury.jpg";
 import venusImg from "./textures/venus.jpg";
 import earthImg from "./textures/earth.jpg";
 import saturnImg from "./textures/saturn.jpg";
@@ -32,7 +33,6 @@ import {
 const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) => {
     const T = (epoch - 2451545.0) / 36525; // Centuries past J2000.0
 
-    // Update the orbital elements using the rates of change
     const updatedL = L + T * rates.L_rate; // Mean longitude
     const updatedA = a + T * rates.a_rate; // Semi-major axis
     const updatedE = e + T * rates.e_rate; // Eccentricity
@@ -40,23 +40,17 @@ const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) =
     const updatedPeri = longPeri + T * rates.longPeri_rate; // Longitude of perihelion
     const updatedNode = longNode + T * rates.longNode_rate; // Longitude of ascending node
 
-    // Calculate mean anomaly
     let M = updatedL - updatedPeri;
     M = M % (2 * Math.PI); // Normalize to 0-2π
 
-    // Initial guess for eccentric anomaly
     let E = M;
-
-    // Solve Kepler's equation iteratively for E
     for (let i = 0; i < 10; i++) {
         E = M + updatedE * Math.sin(E);
     }
 
-    // Heliocentric coordinates in the orbital plane
     const x = updatedA * (Math.cos(E) - updatedE);
     const y = updatedA * Math.sqrt(1 - updatedE * updatedE) * Math.sin(E);
 
-    // Convert to 3D space using inclination and node
     const cosI = Math.cos(updatedI);
     const sinI = Math.sin(updatedI);
     const cosNode = Math.cos(updatedNode);
@@ -74,38 +68,32 @@ const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) =
 const SolarSystem = () => {
     const mountRef = useRef(null);
     const [rotationSpeed, setRotationSpeed] = useState(0.1);
-    const [cameraTarget, setCameraTarget] = useState(null); // State to track the focused planet
+    const [cameraTarget, setCameraTarget] = useState(null);
 
     useEffect(() => {
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.051, 3000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
-        mountRef.current.appendChild(renderer.domElement);
+        
+        const currentMount = mountRef.current;
+        currentMount.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
-        camera.position.z = 100; // Initial camera position
-        controls.enableDamping = true; // Smooth movement
+        camera.position.z = 100;
+        controls.enableDamping = true;
         controls.dampingFactor = 0.25;
 
-        // Add Sun
-        // const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
-        // const sunMaterial = new THREE.MeshBasicMaterial({ color: 0xffff00 });
-        // const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
-        // scene.add(sunMesh);
-        // Load Sun texture
         const textureLoader = new THREE.TextureLoader();
-        const sunTexture = textureLoader.load(sunImg); // Update with your texture path
+        const sunTexture = textureLoader.load(sunImg);
 
-        // Add Sun with texture
         const sunGeometry = new THREE.SphereGeometry(5, 32, 32);
-        const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture }); // Use texture for the Sun
+        const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
         const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
         scene.add(sunMesh);
 
-        // Create planets and orbit paths
         const planets = [
-            { name: 'Mercury', mesh: sunImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
+            { name: 'Mercury', mesh: mercuryImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
             { name: 'Venus', mesh: venusImg, elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
             { name: 'Earth', mesh: earthImg, elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
             { name: 'Mars', mesh: marsImg, elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
@@ -119,15 +107,12 @@ const SolarSystem = () => {
         planets.forEach(planet => {
             const geometry = new THREE.SphereGeometry(planet.scale, 32, 32);
             const textureLoaderPlanet = new THREE.TextureLoader();
-            const texteur = textureLoaderPlanet.load(planet.mesh); // Update with your texture path
-            // const material = new THREE.MeshBasicMaterial({ color: planet.color });
-            const material = new THREE.MeshBasicMaterial({ map: texteur }); // Use texture for the Sun
+            const planetTexture = textureLoaderPlanet.load(planet.mesh);
+            const material = new THREE.MeshBasicMaterial({ map: planetTexture });
             const planetMesh = new THREE.Mesh(geometry, material);
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
 
-
-            // Create orbit line
             const orbitPoints = [];
             for (let i = 0; i <= 360; i++) {
                 const theta = (i * Math.PI) / 180;
@@ -138,7 +123,7 @@ const SolarSystem = () => {
                     planet.elements.L + theta,
                     planet.elements.longPeri,
                     planet.elements.longNode,
-                    2451545.0, // Base epoch (replace this with real-time logic later)
+                    2451545.0,
                     planet.rates
                 );
                 orbitPoints.push(new THREE.Vector3(position.x * 50, position.y * 50, position.z * 50));
@@ -154,14 +139,11 @@ const SolarSystem = () => {
         pointLight.position.set(0, 0, 0);
         scene.add(pointLight);
 
-        // Animation loop
-        let epoch = 2451545.0; // Starting epoch
+        let epoch = 2451545.0;
         const animate = () => {
             requestAnimationFrame(animate);
 
-            // Increment epoch to simulate time passing, controlled by rotationSpeed
             epoch += rotationSpeed;
-
             planets.forEach((planet, idx) => {
                 const position = calculatePlanetPosition(
                     planet.elements.a,
@@ -173,16 +155,14 @@ const SolarSystem = () => {
                     epoch,
                     planet.rates
                 );
-
                 planetMeshes[idx].position.set(position.x * 50, position.y * 50, position.z * 50);
             });
 
-            // If a camera target is set, move the camera towards it
             if (cameraTarget !== null) {
                 const targetPosition = planetMeshes[cameraTarget].position.clone();
-                camera.position.copy(targetPosition).add(new THREE.Vector3(0, 0, 20)); // Adjust distance as needed
-                controls.target.copy(targetPosition); // Update control target to the focused planet
-                controls.update(); // Update controls after modifying the target
+                camera.position.copy(targetPosition).add(new THREE.Vector3(0, 0, 20));
+                controls.target.copy(targetPosition);
+                controls.update();
             }
 
             controls.update();
@@ -192,12 +172,9 @@ const SolarSystem = () => {
         animate();
 
         return () => {
-            const mountElement = mountRef.current;
-            if (mountElement) {
-                mountElement.removeChild(renderer.domElement);
-            }
+            currentMount.removeChild(renderer.domElement);
         };
-    }, [rotationSpeed, cameraTarget]); // Depend on rotationSpeed and cameraTarget
+    }, [rotationSpeed, cameraTarget]);
 
     return (
         <div ref={mountRef}>
