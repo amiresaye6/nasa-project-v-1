@@ -2,6 +2,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 // import Drawer from '@mui/material/Drawer';
+import Drawer from './Drawer';
+
 
 import sunImg from "./textures/sun.jpg";
 import mercuryImg from "./textures/mercury.jpg";
@@ -86,6 +88,8 @@ const SolarSystem = () => {
     const [cameraTarget, setCameraTarget] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);  // State for drawer visibility
     const [selectedPlanet, setSelectedPlanet] = useState(null); // State for selected planet
+    const [hoveredPlanetIndex, setHoveredPlanetIndex] = useState(null); // State for hovered planet
+
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
@@ -120,14 +124,14 @@ const SolarSystem = () => {
         // scene.add(starMesh);
 
         const planets = [
-            { name: 'Mercury', mesh: mercuryImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
-            { name: 'Venus', mesh: venusImg, elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
-            { name: 'Earth', mesh: earthImg, elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
-            { name: 'Mars', mesh: marsImg, elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
-            { name: 'Jupiter', mesh: jupiterImg, elements: jupiterElements, rates: jupiterRates, color: 0xffcc00, scale: 1.5 },
-            { name: 'Saturn', mesh: saturnImg, elements: saturnElements, rates: saturnRates, color: 0xffcc99, scale: 1.2 },
-            { name: 'Uranus', mesh: uranusImg, elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
-            { name: 'Neptune', mesh: neptuneImg, elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
+            { name: 'Mercury', description: planetDescriptions.Mercury, mesh: mercuryImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
+            { name: 'Venus', description: planetDescriptions.Venus, mesh: venusImg, elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
+            { name: 'Earth', description: planetDescriptions.Earth, mesh: earthImg, elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
+            { name: 'Mars', description: planetDescriptions.Mars, mesh: marsImg, elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
+            { name: 'Jupiter', description: planetDescriptions.Jupiter, mesh: jupiterImg, elements: jupiterElements, rates: jupiterRates, color: 0xffcc00, scale: 1.5 },
+            { name: 'Saturn', description: planetDescriptions.Saturn, mesh: saturnImg, elements: saturnElements, rates: saturnRates, color: 0xffcc99, scale: 1.2 },
+            { name: 'Uranus', description: planetDescriptions.Uranus, mesh: uranusImg, elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
+            { name: 'Neptune', description: planetDescriptions.Neptune, mesh: neptuneImg, elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
         ];
 
         const planetMeshes = [];
@@ -138,6 +142,7 @@ const SolarSystem = () => {
             const material = new THREE.MeshBasicMaterial({ map: planetTexture });
             const planetMesh = new THREE.Mesh(geometry, material);
             planetMesh.name = planet.name; // Name the mesh
+            planetMesh.description = planet.description; // Name the mesh
 
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
@@ -159,7 +164,7 @@ const SolarSystem = () => {
             }
 
             const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x888888 });
+            const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x282828, });
             const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
             scene.add(orbitLine);
         });
@@ -213,7 +218,8 @@ const SolarSystem = () => {
             const intersects = raycaster.intersectObjects(planetMeshes);
             if (intersects.length > 0) {
                 const clickedPlanet = intersects[0].object;
-                setSelectedPlanet(clickedPlanet.name);
+                
+                setSelectedPlanet(clickedPlanet);
                 setDrawerOpen(true); // Open the drawer
             }
         };
@@ -230,6 +236,25 @@ const SolarSystem = () => {
 
     return (
         <div ref={mountRef}>
+
+            {/* Backdrop */}
+            {drawerOpen && (
+                <div 
+                    className="backdrop"
+                    style={{
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim effect
+                        zIndex: 999, // Make sure it's above everything else
+                    }}
+                    onClick={() => setDrawerOpen(false)} // Close when clicking outside drawer
+                />
+            )}
+
+
             <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1000, color: 'white' }}>
                 Speed:
                 <input
@@ -242,7 +267,7 @@ const SolarSystem = () => {
                     style={{ marginLeft: '10px', verticalAlign: 'middle' }}
                 />
             </div>
-            <div style={{ position: 'absolute', top: '50px', left: '10px', zIndex: 1000, color: 'white' }}>
+            {/* <div style={{ position: 'absolute', top: '50px', left: '10px', zIndex: 1000, color: 'white' }}>
                 {['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].map((planet, index) => (
                     <button
                         key={planet}
@@ -258,10 +283,15 @@ const SolarSystem = () => {
                 >
                     Normal Mode
                 </button>
-            </div>
+            </div> */}
 
             {/* Drawer for planet details */}
-            
+            <Drawer 
+                isOpen={drawerOpen} 
+                onClose={() => setDrawerOpen(false)}
+                planetName={selectedPlanet?.name || ''}
+                planetDescription={selectedPlanet?.description || ''}
+            />
             {/* <img src={sunImg} alt="" /> */}
         </div>
     );
