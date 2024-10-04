@@ -15,6 +15,7 @@ import jupiterImg from "./textures/jupiter.jpg";
 import uranusImg from "./textures/uranus.jpg";
 import neptuneImg from "./textures/neptune.jpg";
 import starfieldImg from "./textures/starfield.jpg";
+import { MERCURY, VENUS, EARTH, MARS, JUPITER, SATURN, URANUS, NEPTUNE } from './Data/PlanetsDetails';
 import {
     mercuryElements,
     venusElements,
@@ -35,16 +36,16 @@ import {
 } from './PlanetsData';
 
 // Define your planet descriptions
-const planetDescriptions = {
-    Mercury: "Mercury is the closest planet to the Sun...",
-    Venus: "Venus is the second planet from the Sun...",
-    Earth: "Earth is our home planet...",
-    Mars: "Mars is the fourth planet from the Sun...",
-    Jupiter: "Jupiter is the largest planet in our solar system...",
-    Saturn: "Saturn is known for its ring system...",
-    Uranus: "Uranus is an ice giant...",
-    Neptune: "Neptune is the farthest planet from the Sun...",
-};
+// const planetDescriptions = {
+//     Mercury: "Mercury is the closest planet to the Sun...",
+//     Venus: "Venus is the second planet from the Sun...",
+//     Earth: "Earth is our home planet...",
+//     Mars: "Mars is the fourth planet from the Sun...",
+//     Jupiter: "Jupiter is the largest planet in our solar system...",
+//     Saturn: "Saturn is known for its ring system...",
+//     Uranus: "Uranus is an ice giant...",
+//     Neptune: "Neptune is the farthest planet from the Sun...",
+// };
 
 // Keplerian element calculations for planet positions
 const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) => {
@@ -194,15 +195,17 @@ const SolarSystem = () => {
         // scene.add(starMesh);
 
         const planets = [
-            { name: 'Mercury', description: planetDescriptions.Mercury, mesh: mercuryImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
-            { name: 'Venus', description: planetDescriptions.Venus, mesh: venusImg, elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
-            { name: 'Earth', description: planetDescriptions.Earth, mesh: earthImg, elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
-            { name: 'Mars', description: planetDescriptions.Mars, mesh: marsImg, elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
-            { name: 'Jupiter', description: planetDescriptions.Jupiter, mesh: jupiterImg, elements: jupiterElements, rates: jupiterRates, color: 0xffcc00, scale: 1.5 },
-            { name: 'Saturn', description: planetDescriptions.Saturn, mesh: saturnImg, elements: saturnElements, rates: saturnRates, color: 0xffcc99, scale: 1.2 },
-            { name: 'Uranus', description: planetDescriptions.Uranus, mesh: uranusImg, elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
-            { name: 'Neptune', description: planetDescriptions.Neptune, mesh: neptuneImg, elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
+            { name: 'Mercury', details: MERCURY, mesh: mercuryImg, elements: mercuryElements, rates: mercuryRates, color: 0xaaaaaa, scale: 0.5 },
+            { name: 'Venus', details: VENUS, mesh: venusImg, elements: venusElements, rates: venusRates, color: 0xffcc33, scale: 1 },
+            { name: 'Earth', details: EARTH, mesh: earthImg, elements: earthElements, rates: earthRates, color: 0x0000ff, scale: 1 },
+            { name: 'Mars', details: MARS, mesh: marsImg, elements: marsElements, rates: marsRates, color: 0xff0000, scale: 0.75 },
+            { name: 'Jupiter', details: JUPITER, mesh: jupiterImg, elements: jupiterElements, rates: jupiterRates, color: 0xffcc00, scale: 1.5 },
+            { name: 'Saturn', details: SATURN, mesh: saturnImg, elements: saturnElements, rates: saturnRates, color: 0xffcc99, scale: 1.2 },
+            { name: 'Uranus', details: URANUS, mesh: uranusImg, elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
+            { name: 'Neptune', details: NEPTUNE, mesh: neptuneImg, elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
         ];
+        
+        
 
         const planetMeshes = [];
         planets.forEach((planet, index) => {
@@ -214,6 +217,18 @@ const SolarSystem = () => {
             planetMesh.name = planet.name; // Name the mesh
             planetMesh.description = planet.description; // Name the mesh
             planetMesh.index = index;  // amir comment: index to determine which planet to focus on when clicked
+
+            // planet details
+            planetMesh.name = planet.details.name;               // Name of the planet
+            planetMesh.description = planet.details.description; // Planet description
+            planetMesh.index = index;                            // Index for referencing planet
+            planetMesh.type = planet.details.type;               // Type of planet (e.g., Terrestrial, Gas Giant)
+            planetMesh.yearLength = planet.details.year_length;  // Length of the planet's year
+            planetMesh.distanceFromSun = planet.details.distance_from_sun; // Distance from the Sun
+            planetMesh.namesake = planet.details.namesake;       // Namesake (e.g., Roman God)
+            planetMesh.moons = planet.details.moons;             // Number of moons
+            planetMesh.note = planet.details.note;    
+
 
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
@@ -405,8 +420,7 @@ const SolarSystem = () => {
             <Drawer 
                 isOpen={drawerOpen} 
                 onClose={() => setDrawerOpen(false)}
-                planetName={selectedPlanet?.name || ''}
-                planetDescription={selectedPlanet?.description || ''}
+                planet={selectedPlanet}
             />
                 {/* <button
                     onClick={() => setRotationSpeed(0.2)} // amir comment, when clicked, it return from the stat position to the rotate  position
