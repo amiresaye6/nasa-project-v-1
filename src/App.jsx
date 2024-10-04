@@ -1,14 +1,14 @@
 import './index.css';
 import SolarSystem from './components/SolarSystem';
-import OrbitingObjects from './components/EarthScene';
-import SphereScene from './components/CamerMovmentTester';
+import Earth from './components/Earth';
+import SphereVisualization from './components/EarthObjects';
 
 function App() {
   return (
     <div className="App">
       <SolarSystem />
-      {/* <OrbitingObjects /> */}
-      {/* <SphereScene /> */}
+      {/* <Earth /> */}
+      {/* <SphereVisualization /> */}
     </div>
   );
 }
