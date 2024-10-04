@@ -10,7 +10,8 @@
   box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5); /* Drawer shadow */
   z-index: 1000;
   transform: translateX(100%); /* Initially hidden */
-  transition: transform 0.3s ease-in-out; /* Smooth open/close animation */
+  transition: transform 0.3s ease-in-out; /* Smooth open/close animation */;
+  border-left: 1px solid #fff3;
 }
 
 .drawer.open {

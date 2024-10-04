@@ -84,6 +84,9 @@ const calculatePlanetPosition = (a, e, I, L, longPeri, longNode, epoch, rates) =
 
 const SolarSystem = () => {
     const mountRef = useRef(null);
+
+    const controlsRef = useRef(null);
+
     const [rotationSpeed, setRotationSpeed] = useState(0.1);
     const [cameraTarget, setCameraTarget] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);  // State for drawer visibility
@@ -99,11 +102,14 @@ const SolarSystem = () => {
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.051, 3000);
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
+        renderer.setPixelRatio(window.devicePixelRatio);
+
 
         const currentMount = mountRef.current;
         currentMount.appendChild(renderer.domElement);
 
         const controls = new OrbitControls(camera, renderer.domElement);
+        controlsRef.current = controls;
         // camera.position.z = 100;
         camera.position.set(-10, -120, 60);
         controls.enableDamping = true;
@@ -116,6 +122,70 @@ const SolarSystem = () => {
         const sunMaterial = new THREE.MeshBasicMaterial({ map: sunTexture });
         const sunMesh = new THREE.Mesh(sunGeometry, sunMaterial);
         scene.add(sunMesh);
+
+        // ----------------------
+        const starCount = 1000;
+        const starGeometry = new THREE.BufferGeometry();
+        const starSizes = new Float32Array(starCount);
+        const starColors = new Float32Array(starCount * 3);
+
+        // Increase sizes of stars
+        for (let i = 0; i < starCount; i++) {
+            // Modify the size ranges to make the stars larger
+            const randomSizeFactor = Math.random();
+            if (randomSizeFactor < 0.7) {
+                // 70% of stars are small, but larger than before
+                starSizes[i] = Math.random() * 0.5 + 0.2; // Small stars (larger base)
+            } else if (randomSizeFactor < 0.9) {
+                // 20% are medium-sized, with larger sizes
+                starSizes[i] = Math.random() * 0.7 + 0.3; // Medium stars
+            } else {
+                // 10% of stars are larger
+                starSizes[i] = Math.random() * 0.9 + 0.5; // Large stars
+            }
+
+            // Colors - keep some variation for realism
+            starColors[i * 3] = Math.random() * 0.4 + 0.6;   // R
+            starColors[i * 3 + 1] = Math.random() * 0.4 + 0.6; // G
+            starColors[i * 3 + 2] = Math.random() * 0.5 + 0.5; // B
+        }
+
+        starGeometry.setAttribute('size', new THREE.BufferAttribute(starSizes, 1));
+        starGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+        const starMaterial = new THREE.PointsMaterial({
+            vertexColors: true,
+            sizeAttenuation: true,  // Sizes change with distance
+            transparent: true,
+            opacity: 0.8,  // Keep the glow effect
+            depthWrite: false,
+            blending: THREE.AdditiveBlending // Additive blending for glowing stars
+        });
+
+        // Star positions - keep them far away
+        const starVertices = [];
+        for (let i = 0; i < starCount; i++) {
+            const distance = (Math.random() * 2000) + 1000; // Stars are far away
+            const theta = Math.random() * Math.PI * 2;
+            const phi = Math.random() * Math.PI;
+
+            const x = distance * Math.sin(phi) * Math.cos(theta);
+            const y = distance * Math.sin(phi) * Math.sin(theta);
+            const z = distance * Math.cos(phi);
+
+            starVertices.push(x, y, z);
+        }
+
+        starGeometry.setAttribute('position', new THREE.Float32BufferAttribute(starVertices, 3));
+
+        // Create star field and add it to the scene
+        const starField = new THREE.Points(starGeometry, starMaterial);
+        scene.add(starField);
+
+
+
+        // --------------
+
 
         // const starGeomety = new THREE.SphereGeometry(3000, 64, 64);
         // const starTexture = textureLoader.load(starfieldImg);
@@ -227,13 +297,15 @@ const SolarSystem = () => {
             if (cameraTarget !== null) {
                 const targetPlanet = planetMeshes[cameraTarget];
                 if (targetPlanet) {
-                    controls.target.copy(targetPlanet.position); // Keep the target updated
-                    // const targetPosition = targetPlanet.position.clone().add(new THREE.Vector3(10, 10,10));
-                    // camera.position.lerp(targetPosition, 0.1); // Smoothly move the camera
-                    // camera.position.lerp(targetPlanet.position, 0.1); // Smoothly move the camera
-                    controls.update(); // Update controls to reflect the target position
+                    const targetPosition = targetPlanet.position.clone().add(new THREE.Vector3(10, 10, 10)); // Offset camera
+                    camera.position.lerp(targetPosition, 0.1); // Smooth camera movement
+                    controls.target.lerp(targetPlanet.position, 0.1); // Smooth controls target
+
+                    controls.update(); // Keep OrbitControls active
                 }
             }
+
+            
 
             renderer.render(scene, camera);
         };
@@ -269,6 +341,9 @@ const SolarSystem = () => {
             window.removeEventListener('click', handleMouseClick);
 
             currentMount.removeChild(renderer.domElement);
+            renderer.dispose();
+            scene.remove(starField);
+
         };
     }, [rotationSpeed, cameraTarget]);
 
@@ -348,6 +423,52 @@ const SolarSystem = () => {
         </div>
     );
 };
+
+
+// function createStarfield(scene) {
+//     const starCount = 10000; // Number of stars
+//     const starsGeometry = new THREE.BufferGeometry();
+//     const starPositions = new Float32Array(starCount * 3); // Each star needs an x, y, z position
+//     const starColors = new Float32Array(starCount * 3); // RGB values for each star
+    
+//     // Create a simple star texture
+//     const starTexture = new THREE.TextureLoader().load('starfield.jpg'); // Use a small circular white texture
+
+//     // Loop through and set random positions and color variations
+//     for (let i = 0; i < starCount; i++) {
+//         const x = (Math.random() - 0.5) * 2000; // Random position within a cube of size 2000
+//         const y = (Math.random() - 0.5) * 2000;
+//         const z = (Math.random() - 0.5) * 2000;
+
+//         starPositions[i * 3] = x;
+//         starPositions[i * 3 + 1] = y;
+//         starPositions[i * 3 + 2] = z;
+
+//         // Color variation: blueish, yellowish, reddish tones
+//         const colorOffset = Math.random() * 0.2;
+//         starColors[i * 3] = 1.0 - colorOffset; // Red component
+//         starColors[i * 3 + 1] = 1.0 - (colorOffset * 2); // Green component
+//         starColors[i * 3 + 2] = 1.0; // Blue component
+//     }
+
+//     // Assign positions and colors to the geometry
+//     starsGeometry.setAttribute('position', new THREE.BufferAttribute(starPositions, 3));
+//     starsGeometry.setAttribute('color', new THREE.BufferAttribute(starColors, 3));
+
+//     // Create the material for the stars
+//     const starsMaterial = new THREE.PointsMaterial({
+//         size: 1.5, // Size of each star
+//         map: starTexture, // Use the star texture
+//         transparent: true, // Ensure the stars blend nicely
+//         depthWrite: false, // Avoid writing to the depth buffer (makes it appear behind objects)
+//         blending: THREE.AdditiveBlending, // Additive blending for glow effect
+//         vertexColors: true, // Enable vertex colors for star color variation
+//     });
+
+//     // Create the points object for the starfield
+//     const starfield = new THREE.Points(starsGeometry, starsMaterial);
+//     scene.add(starfield);
+// }
 
 const buttonStyle = {
     margin: '5px',
