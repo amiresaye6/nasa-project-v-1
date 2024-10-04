@@ -87,7 +87,8 @@ const SolarSystem = () => {
 
     const controlsRef = useRef(null);
 
-    const [rotationSpeed, setRotationSpeed] = useState(0.1);
+    const [rotationSpeed, setRotationSpeed] = useState(0.0);
+    const [focuseState, setFocuseState] = useState(false);
     const [cameraTarget, setCameraTarget] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);  // State for drawer visibility
     const [selectedPlanet, setSelectedPlanet] = useState(null); // State for selected planet
@@ -112,6 +113,7 @@ const SolarSystem = () => {
         controlsRef.current = controls;
         // camera.position.z = 100;
         camera.position.set(-10, -120, 60);
+        // camera.position.set(0, 0, 100);  // Start with a position that works
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;  // amir comment >> this value makes the motion smooth بالعربي بتخلي لما تحرك بالموس و تسيب مش بيقف مره واحده
 
@@ -305,7 +307,7 @@ const SolarSystem = () => {
                 }
             }
 
-            
+
 
             renderer.render(scene, camera);
         };
@@ -324,7 +326,6 @@ const SolarSystem = () => {
             const intersects = raycaster.intersectObjects(planetMeshes);
             if (intersects.length > 0) {
                 const clickedPlanet = intersects[0].object;
-                
                 setSelectedPlanet(clickedPlanet);
                 setDrawerOpen(true); // Open the drawer
                 // console.log("hi iam hossam");
@@ -332,7 +333,13 @@ const SolarSystem = () => {
                 setRotationSpeed(0.0)
                 setCameraTarget(clickedPlanet.index)
             }
+            if(selectedPlanet) {
+                setFocuseState(true)
+            } else {
+                setFocuseState(false)
+            }
         };
+
 
         window.addEventListener('click', handleMouseClick);
 
@@ -346,81 +353,89 @@ const SolarSystem = () => {
         };
     }, [rotationSpeed, cameraTarget]);
 
-    return (
-        <div ref={mountRef}>
+return (
+    <div ref={mountRef}>
+        {/* Backdrop */}
+        {drawerOpen && (
+            <div
+                className="backdrop"
+                style={{
+                    position: 'fixed',
+                    top: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim effect
+                    zIndex: 999, // Make sure it's above everything else
+                }}
+                onClick={() => setDrawerOpen(false)} // Close when clicking outside drawer
+            />
+        )}
 
-            {/* Backdrop */}
-            {drawerOpen && (
-                <div 
-                    className="backdrop"
-                    style={{
-                        position: 'fixed',
-                        top: 0,
-                        left: 0,
-                        width: '100%',
-                        height: '100%',
-                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim effect
-                        zIndex: 999, // Make sure it's above everything else
-                    }}
-                    onClick={() => setDrawerOpen(false)} // Close when clicking outside drawer
-                />
-            )}
-
-
-            <div style={{ position: 'absolute', top: '10px', left: '10px', zIndex: 1000, color: 'white' }}>
-                Speed:
+        {/* Speed Controller at the Bottom Center */}
+        <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, color: 'white', textAlign: 'center' }}>
+            <div style={{ display: 'flex', alignItems: 'center' }}>
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginRight: '10px' }}>
+                    <path d="M15.41 7l-5.41 5.41L15.41 18l1.41-1.41L12.83 12l3.99-3.99z" />
+                </svg>
                 <input
                     type="range"
-                    min="0"
-                    max="2"
+                    
+                    min="-2" // Min value for the slider
+                    max="2" // Max value for the slider
                     step="0.01"
-                    value={rotationSpeed}
+                    value={rotationSpeed} // Current value for the slider
                     onChange={(e) => {
-                        setRotationSpeed(parseFloat(e.target.value))
-                        console.log("spead of rotatoion: ", parseFloat(e.target.value))
+                        setRotationSpeed(parseFloat(e.target.value));
+                        console.log("Speed of rotation: ", parseFloat(e.target.value));
                     }}
-                    style={{ marginLeft: '10px', verticalAlign: 'middle' }}
+                    style={{
+                        margin: '0 10px', // Space around the slider
+                        verticalAlign: 'middle',
+                        appearance: 'none',
+                        width: '200px', // Width of the slider
+                        background: 'rgba(255, 255, 255, 0.3)', // Background of the slider
+                        borderRadius: '5px',
+                        height: '10px',
+                    }}
                 />
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginLeft: '10px' }}>
+                    <path d="M8.59 16l5.41-5.41L8.59 5l-1.41 1.41L11.17 12l-4.99 4.99z" />
+                </svg>
             </div>
-            {/* <div style={{ position: 'absolute', top: '50px', left: '10px', zIndex: 1000, color: 'white' }}>
-                {['Mercury', 'Venus', 'Earth', 'Mars', 'Jupiter', 'Saturn', 'Uranus', 'Neptune'].map((planet, index) => (
-                    <button
-                        key={planet}
-                        onClick={() => setCameraTarget(index)}
-                        style={buttonStyle}
-                    >
-                        {planet}
-                    </button>
-                ))}
-            <div style={{ position: 'absolute', top: '50px', left: '10px', zIndex: 1000, color: 'white' }}>
+        </div>
+
+        {/* Normal Mode Button on Left Side Centered Vertically */}
+        <div style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', zIndex: 1000, color: 'white' }}>
+            {focuseState && (
                 <button
                     onClick={() => setCameraTarget(null)}
-                    style={buttonStyle}
+                    style={{
+                        ...buttonStyle,
+                        display: 'flex',
+                        alignItems: 'center',
+                    }}
                 >
-                    Normal Mode
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginRight: '5px' }}>
+                        <path d="M15.41 7l-5.41 5.41L15.41 18l1.41-1.41L12.83 12l3.99-3.99z" />
+                    </svg>
                 </button>
-            </div> */}
-
-            {/* Drawer for planet details */}
-            <Drawer 
-                isOpen={drawerOpen} 
-                onClose={() => setDrawerOpen(false)}
-                planetName={selectedPlanet?.name || ''}
-                planetDescription={selectedPlanet?.description || ''}
-            />
-                {/* <button
-                    onClick={() => setRotationSpeed(0.2)} // amir comment, when clicked, it return from the stat position to the rotate  position
-                    style={buttonStyle}
-                >
-                    return
-                </button>
-            </div> */}
-
-            {/* Drawer for planet details */}
-
-            {/* <img src={sunImg} alt="" /> */}
+            )}
         </div>
-    );
+
+        {/* Drawer for planet details */}
+        <Drawer
+            isOpen={drawerOpen}
+            onClose={() => setDrawerOpen(false)}
+            planetName={selectedPlanet?.name || ''}
+            planetDescription={selectedPlanet?.description || ''}
+        />
+    </div>
+);
+
+    
+    
+
 };
 
 
@@ -429,7 +444,7 @@ const SolarSystem = () => {
 //     const starsGeometry = new THREE.BufferGeometry();
 //     const starPositions = new Float32Array(starCount * 3); // Each star needs an x, y, z position
 //     const starColors = new Float32Array(starCount * 3); // RGB values for each star
-    
+
 //     // Create a simple star texture
 //     const starTexture = new THREE.TextureLoader().load('starfield.jpg'); // Use a small circular white texture
 
