@@ -1,24 +1,32 @@
 .drawer {
   position: fixed;
-  right: 0;
+  left: 0;
+  /* Position the drawer on the left */
   top: 0;
-  width: 40%; /* Adjusted width */
+  width: 40%;
+  /* Adjust width as necessary */
   height: 100%;
-  background-color: rgb(0 0 0 / 55%);/* Transparent background */
+  background-color: rgb(0 0 0 / 55%);
+  /* Transparent background */
   color: #ffffff;
-  /* backdrop-filter: blur(10px); */
-  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5); /* Drawer shadow */
+  box-shadow: 2px 0 5px rgba(0, 0, 0, 0.5);
+  /* Shadow adjusted for left side */
   z-index: 1000;
-  transform: translateX(100%); /* Initially hidden */
-  transition: transform 0.3s ease-in-out; /* Smooth open/close animation */;
-  border-left: 1px solid #fff3;
+  transform: translateX(-100%);
+  /* Initially hidden, moves out to the left */
+  transition: transform 0.3s ease-in-out;
+  /* Smooth open/close animation */
+  border-right: 1px solid #fff3;
+  /* Border on the right side now */
 }
 
 .drawer.open {
-  transform: translateX(0); /* Show drawer when open */
+  transform: translateX(0);
+  /* Show drawer when open */
 }
 
 .drawer-header {
+  direction: rtl;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -26,7 +34,7 @@
   border-bottom: 1px solid rgba(0, 0, 0, 0.1);
 }
 
-.drawer-header h2 {
+h2 {
   margin: 0;
   font-size: 24px;
 }
@@ -40,4 +48,125 @@
 
 .drawer-content {
   padding: 20px;
+}
+
+.drawer-title {
+  padding: 5px;
+}
+
+
+.planet-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  /* Add spacing between items */
+}
+
+.detail-item {
+  width: calc(50% - 20px);
+  /* Make each item take 50% width */
+  /* padding: 10px; */
+  box-sizing: border-box;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+h3 {
+  margin: 0;
+}
+
+h2 {
+  margin: 0;
+  font-size: 24px;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 10px 0;
+}
+
+.legend {
+  color: #ffffff80;
+  font-size: .8em;
+  margin: 0;
+  text-align: left;
+}
+
+.drawer {
+  position: fixed;
+  left: 0;
+  top: 0;
+  width: 40%;
+  height: 100%;
+  background-color: rgb(0 0 0 / 55%);
+  color: #ffffff;
+  box-shadow: -2px 0 5px rgba(0, 0, 0, 0.5);
+  z-index: 1000;
+  transform: translateX(-100%);
+  transition: transform 0.3s ease-in-out;
+  border-right: 1px solid #fff3;
+  display: flex;
+  flex-direction: column;
+}
+
+.drawer.open {
+  transform: translateX(0);
+}
+
+.drawer-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 20px;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.drawer-content {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.planet-details {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+}
+
+.detail-item {
+  width: calc(50% - 20px);
+  padding: 10px;
+  box-sizing: border-box;
+}
+
+.label {
+  font-size: 16px;
+  font-weight: bold;
+  margin-bottom: 10px;
+}
+
+h3 {
+  margin: 0;
+}
+
+hr {
+  border: none;
+  border-top: 1px solid #ccc;
+  margin: 10px 0;
+}
+
+.legend {
+  color: #ffffff80;
+  font-size: 0.8em;
+  margin-top: 20px;
+  text-align: left;
+  position: relative;
 }
