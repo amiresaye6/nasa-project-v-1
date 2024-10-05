@@ -97,13 +97,15 @@ const venusRates = {
 };
 
 const earthRates = {
-    L_rate: 360.0 / 365.256363004 * Math.PI / 180, // 360 degrees per year
-    a_rate: 0.0,
-    e_rate: 0.0,
-    I_rate: 0.0,
-    longPeri_rate: 0.0,
-    longNode_rate: 0.0,
+    L_rate: 35999.37244981 * Math.PI / 180,   // Mean longitude rate
+    a_rate: 0.00000562,                       // Semi-major axis rate
+    e_rate: -0.00004392,                      // Eccentricity rate
+    I_rate: -0.01294668 * Math.PI / 180,      // Inclination rate
+    longPeri_rate: 0.32327364 * Math.PI / 180, // Longitude of perihelion rate
+    longNode_rate: 0.0                        // Longitude of the ascending node rate
 };
+
+
 
 const marsRates = {
     L_rate: 19140.29933456 * Math.PI / 180,

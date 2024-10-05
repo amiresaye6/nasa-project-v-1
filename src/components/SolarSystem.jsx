@@ -232,8 +232,8 @@ const SolarSystem = () => {
             { name: 'Uranus', details: URANUS, mesh: uranusImg, elements: uranusElements, rates: uranusRates, color: 0x66ccff, scale: 1 },
             { name: 'Neptune', details: NEPTUNE, mesh: neptuneImg, elements: neptuneElements, rates: neptuneRates, color: 0x0000cc, scale: 1 },
         ];
-        
-        
+
+
 
         const planetMeshes = [];
         planets.forEach((planet, index) => {
@@ -253,7 +253,7 @@ const SolarSystem = () => {
             planetMesh.name = planet.name;
             planetMesh.description = planet.description;
             planetMesh.index = index;
-        
+
             // planet details
             planetMesh.name = planet.details.name;
             planetMesh.description = planet.details.description;
@@ -264,26 +264,26 @@ const SolarSystem = () => {
             planetMesh.namesake = planet.details.namesake;
             planetMesh.moons = planet.details.moons;
             planetMesh.note = planet.details.note;
-        
+
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
-        
+
             // Check if the current planet is Earth and create a moon
             if (planet.name === 'Earth') {
                 const moonGeometry = new THREE.SphereGeometry(0.27, 32, 32); // Moon's radius is about 27% of Earth's
                 const moonTexture = textureLoaderPlanet.load(moonImg); // You'll need to add a moon texture
                 const moonMaterial = new THREE.MeshBasicMaterial({ map: moonTexture });
                 const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
-                
+
                 // Position the moon relative to Earth
                 moonMesh.position.set(2, 0, 0); // Adjust these values to set the moon's distance from Earth
-                
+
                 // Create a pivot point for the moon's orbit
                 const moonPivot = new THREE.Object3D();
                 moonPivot.add(moonMesh);
                 planetMesh.add(moonPivot);
             }
-        
+
             const orbitPoints = [];
             for (let i = 0; i <= 360; i++) {
                 const theta = (i * Math.PI) / 180;
@@ -299,7 +299,7 @@ const SolarSystem = () => {
                 );
                 orbitPoints.push(new THREE.Vector3(position.x * 50, position.y * 50, position.z * 50));
             }
-        
+
             const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
             const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x282828, });
             const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
@@ -390,6 +390,65 @@ const SolarSystem = () => {
 
 
 
+            const fetchData = async () => {
+                try {
+                    const response = await fetch('https://data.nasa.gov/resource/b67r-rgxc.json');
+                    const data = await response.json();
+            
+                    // Reusable geometries and materials
+                    const sphereGeometry = new THREE.SphereGeometry(0.05, 32, 32);
+                    const hazardousMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+                    const nonHazardousMaterial = new THREE.MeshBasicMaterial({ color: 0x282828 });
+                    const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x282828, });
+            
+                    // Prepare batch operations
+                    const spheres = [];
+                    const orbits = [];
+            
+                    data.slice(0, 50).forEach((obj) => {
+                        const a = (parseFloat(obj.q_au_1) + parseFloat(obj.q_au_2)) / 2;
+                        const e = parseFloat(obj.e);
+                        const i = THREE.MathUtils.degToRad(parseFloat(obj.i_deg));
+                        const omega = THREE.MathUtils.degToRad(parseFloat(obj.w_deg));
+                        const Omega = THREE.MathUtils.degToRad(parseFloat(obj.node_deg));
+            
+                        // Create sphere
+                        const sphere = new THREE.Mesh(sphereGeometry, 
+                            obj.is_potentially_hazardous_asteroid === 'true' ? hazardousMaterial : nonHazardousMaterial);
+                        
+                        const x = a * (Math.cos(Omega) * Math.cos(omega + i) - Math.sin(Omega) * Math.sin(omega + i) * Math.cos(i));
+                        const y = a * (Math.sin(Omega) * Math.cos(omega + i) + Math.cos(Omega) * Math.sin(omega + i) * Math.cos(i));
+                        const z = a * Math.sin(omega + i) * Math.sin(i);
+            
+                        sphere.position.set(x, y, z);
+                        spheres.push(sphere);
+            
+                        // Create orbit
+                        const orbitPoints = [];
+                        for (let theta = 0; theta <= 2 * Math.PI; theta += 0.1) { // Increased step size
+                            const r = a * (1 - e * e) / (1 + e * Math.cos(theta));
+                            const xOrbit = r * (Math.cos(Omega) * Math.cos(omega + theta) - Math.sin(Omega) * Math.sin(omega + theta) * Math.cos(i));
+                            const yOrbit = r * (Math.sin(Omega) * Math.cos(omega + theta) + Math.cos(Omega) * Math.sin(omega + theta) * Math.cos(i));
+                            const zOrbit = r * Math.sin(omega + theta) * Math.sin(i);
+                            orbitPoints.push(new THREE.Vector3(xOrbit * 50, yOrbit * 50, zOrbit * 50));
+                        }
+            
+                        const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+                        const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+                        orbits.push(orbit);
+                    });
+            
+                    // Batch add to scene
+                    scene.add(...spheres, ...orbits);
+            
+                } catch (error) {
+                    console.error('Error fetching data:', error);
+                }
+            };
+            fetchData()
+
+
+
             renderer.render(scene, camera);
         };
 
@@ -414,7 +473,7 @@ const SolarSystem = () => {
                 setRotationSpeed(0.0)
                 setCameraTarget(clickedPlanet.index)
             }
-            if(selectedPlanet) {
+            if (selectedPlanet) {
                 setFocuseState(true)
             } else {
                 setFocuseState(false)
@@ -543,46 +602,77 @@ return (
                         console.log("Speed of rotation: ", parseFloat(e.target.value));
                     }}
                     style={{
-                        margin: '0 10px', // Space around the slider
-                        verticalAlign: 'middle',
-                        appearance: 'none',
-                        width: '200px', // Width of the slider
-                        background: 'rgba(255, 255, 255, 0.3)', // Background of the slider
-                        borderRadius: '5px',
-                        height: '10px',
+                        position: 'fixed',
+                        top: 0,
+                        left: 0,
+                        width: '100%',
+                        height: '100%',
+                        backgroundColor: 'rgba(0, 0, 0, 0.5)', // Dim effect
+                        zIndex: 999, // Make sure it's above everything else
                     }}
+                    onClick={() => setDrawerOpen(false)} // Close when clicking outside drawer
                 />
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginLeft: '10px' }}>
-                    <path d="M8.59 16l5.41-5.41L8.59 5l-1.41 1.41L11.17 12l-4.99 4.99z" />
-                </svg>
-            </div>
-        </div>
+                </div>
+                </div>
 
-        {/* Normal Mode Button on Left Side Centered Vertically */}
-        <div style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', zIndex: 1000, color: 'white' }}>
-            {focuseState && !drawerOpen && (
-                <button
-                    onClick={() => setCameraTarget(null)}
-                    style={{
-                        ...buttonStyle,
-                        display: 'flex',
-                        alignItems: 'center',
-                    }}
-                >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginRight: '5px' }}>
+            {/* Speed Controller at the Bottom Center */}
+            <div style={{ position: 'absolute', bottom: '20px', left: '50%', transform: 'translateX(-50%)', zIndex: 1000, color: 'white', textAlign: 'center' }}>
+                <div style={{ display: 'flex', alignItems: 'center' }}>
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginRight: '10px' }}>
                         <path d="M15.41 7l-5.41 5.41L15.41 18l1.41-1.41L12.83 12l3.99-3.99z" />
                     </svg>
-                </button>
-            )}
-        </div>
+                    <input
+                        type="range"
+
+                        min="-2" // Min value for the slider
+                        max="2" // Max value for the slider
+                        step="0.01"
+                        value={rotationSpeed} // Current value for the slider
+                        onChange={(e) => {
+                            setRotationSpeed(parseFloat(e.target.value));
+                            console.log("Speed of rotation: ", parseFloat(e.target.value));
+                        }}
+                        style={{
+                            margin: '0 10px', // Space around the slider
+                            verticalAlign: 'middle',
+                            appearance: 'none',
+                            width: '200px', // Width of the slider
+                            background: 'rgba(255, 255, 255, 0.3)', // Background of the slider
+                            borderRadius: '5px',
+                            height: '10px',
+                        }}
+                    />
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginLeft: '10px' }}>
+                        <path d="M8.59 16l5.41-5.41L8.59 5l-1.41 1.41L11.17 12l-4.99 4.99z" />
+                    </svg>
+                </div>
+            </div>
+
+            {/* Normal Mode Button on Left Side Centered Vertically */}
+            <div style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', zIndex: 1000, color: 'white' }}>
+                {focuseState && !drawerOpen && cameraTarget && (
+                    <button
+                        onClick={() => setCameraTarget(null)}
+                        style={{
+                            ...buttonStyle,
+                            display: 'flex',
+                            alignItems: 'center',
+                        }}
+                    >
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" style={{ fill: 'white', marginRight: '5px' }}>
+                            <path d="M15.41 7l-5.41 5.41L15.41 18l1.41-1.41L12.83 12l3.99-3.99z" />
+                        </svg>
+                    </button>
+                )}
+            </div>
 
             {/* Drawer for planet details */}
-            <Drawer 
-                isOpen={drawerOpen} 
+            <Drawer
+                isOpen={drawerOpen}
                 onClose={() => setDrawerOpen(false)}
                 planet={selectedPlanet}
             />
-                {/* <button
+            {/* <button
                     onClick={() => setRotationSpeed(0.2)} // amir comment, when clicked, it return from the stat position to the rotate  position
                     style={buttonStyle}
                 >
