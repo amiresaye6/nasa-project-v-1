@@ -438,7 +438,7 @@ return (
 
         {/* Normal Mode Button on Left Side Centered Vertically */}
         <div style={{ position: 'absolute', top: '50%', left: '10px', transform: 'translateY(-50%)', zIndex: 1000, color: 'white' }}>
-            {focuseState && (
+            {focuseState && !drawerOpen && (
                 <button
                     onClick={() => setCameraTarget(null)}
                     style={{
