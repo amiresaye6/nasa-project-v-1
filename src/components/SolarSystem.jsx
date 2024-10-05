@@ -14,6 +14,7 @@ import marsImg from "./textures/mars.jpg";
 import jupiterImg from "./textures/jupiter.jpg";
 import uranusImg from "./textures/uranus.jpg";
 import neptuneImg from "./textures/neptune.jpg";
+import moonImg from "./textures/moon.jpg";
 import starfieldImg from "./textures/starfield.jpg";
 import { MERCURY, VENUS, EARTH, MARS, JUPITER, SATURN, URANUS, NEPTUNE } from './Data/PlanetsDetails';
 import {
@@ -216,25 +217,40 @@ const SolarSystem = () => {
             const planetTexture = textureLoaderPlanet.load(planet.mesh);
             const material = new THREE.MeshBasicMaterial({ map: planetTexture });
             const planetMesh = new THREE.Mesh(geometry, material);
-            planetMesh.name = planet.name; // Name the mesh
-            planetMesh.description = planet.description; // Name the mesh
-            planetMesh.index = index;  // amir comment: index to determine which planet to focus on when clicked
-
+            planetMesh.name = planet.name;
+            planetMesh.description = planet.description;
+            planetMesh.index = index;
+        
             // planet details
-            planetMesh.name = planet.details.name;               // Name of the planet
-            planetMesh.description = planet.details.description; // Planet description
-            planetMesh.index = index;                            // Index for referencing planet
-            planetMesh.type = planet.details.type;               // Type of planet (e.g., Terrestrial, Gas Giant)
-            planetMesh.yearLength = planet.details.year_length;  // Length of the planet's year
-            planetMesh.distanceFromSun = planet.details.distance_from_sun; // Distance from the Sun
-            planetMesh.namesake = planet.details.namesake;       // Namesake (e.g., Roman God)
-            planetMesh.moons = planet.details.moons;             // Number of moons
-            planetMesh.note = planet.details.note;    
-
-
+            planetMesh.name = planet.details.name;
+            planetMesh.description = planet.details.description;
+            planetMesh.index = index;
+            planetMesh.type = planet.details.type;
+            planetMesh.yearLength = planet.details.year_length;
+            planetMesh.distanceFromSun = planet.details.distance_from_sun;
+            planetMesh.namesake = planet.details.namesake;
+            planetMesh.moons = planet.details.moons;
+            planetMesh.note = planet.details.note;
+        
             planetMeshes.push(planetMesh);
             scene.add(planetMesh);
-
+        
+            // Check if the current planet is Earth and create a moon
+            if (planet.name === 'Earth') {
+                const moonGeometry = new THREE.SphereGeometry(0.27, 32, 32); // Moon's radius is about 27% of Earth's
+                const moonTexture = textureLoaderPlanet.load(moonImg); // You'll need to add a moon texture
+                const moonMaterial = new THREE.MeshBasicMaterial({ map: moonTexture });
+                const moonMesh = new THREE.Mesh(moonGeometry, moonMaterial);
+                
+                // Position the moon relative to Earth
+                moonMesh.position.set(2, 0, 0); // Adjust these values to set the moon's distance from Earth
+                
+                // Create a pivot point for the moon's orbit
+                const moonPivot = new THREE.Object3D();
+                moonPivot.add(moonMesh);
+                planetMesh.add(moonPivot);
+            }
+        
             const orbitPoints = [];
             for (let i = 0; i <= 360; i++) {
                 const theta = (i * Math.PI) / 180;
@@ -250,7 +266,7 @@ const SolarSystem = () => {
                 );
                 orbitPoints.push(new THREE.Vector3(position.x * 50, position.y * 50, position.z * 50));
             }
-
+        
             const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
             const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x282828, });
             const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
@@ -442,8 +458,7 @@ return (
             <Drawer 
                 isOpen={drawerOpen} 
                 onClose={() => setDrawerOpen(false)}
-                planetName={selectedPlanet?.name || ''}
-                planetDescription={selectedPlanet?.description || ''}
+                planet={selectedPlanet}
             />
                 {/* <button
                     onClick={() => setRotationSpeed(0.2)} // amir comment, when clicked, it return from the stat position to the rotate  position
