@@ -29,27 +29,27 @@ const Drawer = ({ isOpen, onClose, planet }) => {
                 <div className="planet-details">
                     <div className="detail-item">
                         <div className="label">Year Length</div>
-                        <hr />
+                        {/* <hr /> */}
                         <h3>{planet.yearLength}</h3>
                     </div>
                     <div className="detail-item">
                         <div className="label">Distance from Sun</div>
-                        <hr />
+                        {/* <hr /> */}
                         <h3>{planet.distanceFromSun}</h3>
                     </div>
                     <div className="detail-item">
                         <div className="label">Namesake</div>
-                        <hr />
+                        {/* <hr /> */}
                         <h3>{planet.namesake}</h3>
                     </div>
                     <div className="detail-item">
                         <div className="label">Moons</div>
-                        <hr />
+                        {/* <hr /> */}
                         <h3>{planet.moons}</h3>
                     </div>
                 </div>
 
-                <p class="legend">AU: Astronomical Unit, the distance between the Earth and the Sun.</p>
+                <p className="legend">AU: Astronomical Unit, the distance between the Earth and the Sun.</p>
 
             </div>
         </div>

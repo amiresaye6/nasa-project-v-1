@@ -3,6 +3,8 @@ import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 // import Drawer from '@mui/material/Drawer';
 import Drawer from './Drawer';
+import PlanetLabel from './PlanetLabel';
+import '../App.css';
 
 
 import sunImg from "./textures/sun.jpg";
@@ -94,15 +96,32 @@ const SolarSystem = () => {
     const [cameraTarget, setCameraTarget] = useState(null);
     const [drawerOpen, setDrawerOpen] = useState(false);  // State for drawer visibility
     const [selectedPlanet, setSelectedPlanet] = useState(null); // State for selected planet
-    const [hoveredPlanetIndex, setHoveredPlanetIndex] = useState(null); // State for hovered planet
+    const [hoveredPlanet, setHoveredPlanet] = useState(null);
+    const [planetPositions, setPlanetPositions] = useState({});
+
+    const originalMaterials = {};
+    const hoverMaterials = {};
+    const orbitColors = {
+        'Mercury': 0xaaaaaa,    // Light gray
+        'Venus': 0xffff99,       // Light yellow
+        'Earth': 0x99ccff,      // Light blue
+        'Mars': 0xff9999,       // Light red
+        'Jupiter': 0xffcc99,    // Light orange
+        'Saturn': 0xffffcc,     // Light cream
+        'Uranus': 0x99ffff,     // Light cyan
+        'Neptune': 0x9999ff,    // Light indigo
+    };
 
     const raycaster = new THREE.Raycaster();
     const mouse = new THREE.Vector2();
 
+    const cameraRef = useRef(null);
 
     useEffect(() => {
+
         const scene = new THREE.Scene();
         const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.051, 2000);
+
         const renderer = new THREE.WebGLRenderer();
         renderer.setSize(window.innerWidth, window.innerHeight);
         renderer.setPixelRatio(window.devicePixelRatio);
@@ -115,9 +134,15 @@ const SolarSystem = () => {
         controlsRef.current = controls;
         // camera.position.z = 100;
         camera.position.set(-10, -120, 60);
+        // camera.position.set(100, 75, 100);
+        camera.lookAt(0, 0, 0);
+
+
         // camera.position.set(0, 0, 100);  // Start with a position that works
         controls.enableDamping = true;
         controls.dampingFactor = 0.05;  // amir comment >> this value makes the motion smooth بالعربي بتخلي لما تحرك بالموس و تسيب مش بيقف مره واحده
+        cameraRef.current = camera;
+
 
         const textureLoader = new THREE.TextureLoader();
         const sunTexture = textureLoader.load(sunImg);
@@ -215,7 +240,15 @@ const SolarSystem = () => {
             const geometry = new THREE.SphereGeometry(planet.scale, 32, 32);
             const textureLoaderPlanet = new THREE.TextureLoader();
             const planetTexture = textureLoaderPlanet.load(planet.mesh);
+            
+            // Original material
             const material = new THREE.MeshBasicMaterial({ map: planetTexture });
+            originalMaterials[planet.name] = material;
+
+            // Hover material
+            // const hoverMaterial = new THREE.MeshBasicMaterial({ color: 0xAAAA00, opacity: 0.1 }); // Yellow for hover
+            // hoverMaterials[planet.name] = hoverMaterial;
+
             const planetMesh = new THREE.Mesh(geometry, material);
             planetMesh.name = planet.name;
             planetMesh.description = planet.description;
@@ -270,6 +303,7 @@ const SolarSystem = () => {
             const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
             const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x282828, });
             const orbitLine = new THREE.Line(orbitGeometry, orbitMaterial);
+            orbitLine.name = planet.name + "-orbit"; // Give a name for later reference
             scene.add(orbitLine);
         });
 
@@ -282,6 +316,8 @@ const SolarSystem = () => {
             requestAnimationFrame(animate);
 
             epoch += rotationSpeed;
+            const newPositions = {};
+
             planets.forEach((planet, idx) => {
                 const position = calculatePlanetPosition(
                     planet.elements.a,
@@ -293,8 +329,22 @@ const SolarSystem = () => {
                     epoch,
                     planet.rates
                 );
+                const scaledPosition = {
+                    x: position.x * 50,
+                    y: position.y * 50,
+                    z: position.z * 50
+                };
                 planetMeshes[idx].position.set(position.x * 50, position.y * 50, position.z * 50);
+                newPositions[planet.name] = scaledPosition;
+
             });
+            // setPlanetPositions(newPositions);
+
+            if (cameraRef.current) {
+                setPlanetPositions(newPositions);
+            }
+        
+
 
 
             // camer stuff ///////////////////////////////////////////////////////////////////////////
@@ -374,18 +424,90 @@ const SolarSystem = () => {
 
         window.addEventListener('click', handleMouseClick);
 
+
+        const handleResize = () => {
+            if (cameraRef.current) {
+                cameraRef.current.aspect = window.innerWidth / window.innerHeight;
+                cameraRef.current.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+                
+            }
+        };
+    
+        window.addEventListener('resize', handleResize);
+
+        const handleMouseMove = (event) => {
+            // Update mouse vector with normalized screen coordinates
+            mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
+            mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
+    
+            // Set up the raycaster to intersect objects
+            raycaster.setFromCamera(mouse, camera);
+    
+            const intersects = raycaster.intersectObjects(planetMeshes);
+    
+            // Reset all planets and orbits to original color
+            planetMeshes.forEach(planetMesh => {
+                planetMesh.material = originalMaterials[planetMesh.name];
+            });
+    
+            // Reset all orbit lines to original color
+            scene.children.forEach(child => {
+                if (child.name && child.name.endsWith('-orbit')) {
+                    child.material.color.set(0x282828); // Original orbit color
+                }
+            });
+    
+            // If hovering over a planet, change color
+            if (intersects.length > 0) {
+                document.body.style.cursor = 'pointer'; // Change cursor
+
+                const hoveredPlanet = intersects[0].object;
+    
+                // Change the orbit's color
+                const orbitLine = scene.getObjectByName(hoveredPlanet.name + "-orbit");
+                if (orbitLine) {
+                    orbitLine.material.color.set(orbitColors[hoveredPlanet.name]);
+                }
+                
+            } else {
+                document.body.style.cursor = 'auto'; // Reset cursor
+            }
+        };
+
+        window.addEventListener('mousemove', handleMouseMove);
+
+        
+    
+
         return () => {
             window.removeEventListener('click', handleMouseClick);
+            window.removeEventListener('resize', handleResize);
+            window.removeEventListener('mousemove', handleMouseMove);
+
+
 
             currentMount.removeChild(renderer.domElement);
-            renderer.dispose();
-            scene.remove(starField);
+            // renderer.dispose();
+            // scene.remove(starField);
 
         };
     }, [rotationSpeed, cameraTarget]);
 
 return (
-    <div ref={mountRef}>
+    <div ref={mountRef} style={{ width: '100vw', height: '100vh', overflow: 'hidden' }}>
+
+
+        {/* labels */}
+        {Object.entries(planetPositions).map(([name, position]) => (
+            <PlanetLabel
+                key={name}
+                name={name}
+                position={position}
+                camera={cameraRef.current}
+            />
+        ))}
+
         {/* Backdrop */}
         {drawerOpen && (
             <div
