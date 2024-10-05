@@ -390,62 +390,62 @@ const SolarSystem = () => {
 
 
 
-            const fetchData = async () => {
-                try {
-                    const response = await fetch('https://data.nasa.gov/resource/b67r-rgxc.json');
-                    const data = await response.json();
+            // const fetchData = async () => {
+            //     try {
+            //         const response = await fetch('https://data.nasa.gov/resource/b67r-rgxc.json');
+            //         const data = await response.json();
             
-                    // Reusable geometries and materials
-                    const sphereGeometry = new THREE.SphereGeometry(0.05, 32, 32);
-                    const hazardousMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
-                    const nonHazardousMaterial = new THREE.MeshBasicMaterial({ color: 0x282828 });
-                    const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x282828, });
+            //         // Reusable geometries and materials
+            //         const sphereGeometry = new THREE.SphereGeometry(0.05, 32, 32);
+            //         const hazardousMaterial = new THREE.MeshBasicMaterial({ color: 0xff0000 });
+            //         const nonHazardousMaterial = new THREE.MeshBasicMaterial({ color: 0x282828 });
+            //         const orbitMaterial = new THREE.LineBasicMaterial({ color: 0x282828, });
             
-                    // Prepare batch operations
-                    const spheres = [];
-                    const orbits = [];
+            //         // Prepare batch operations
+            //         const spheres = [];
+            //         const orbits = [];
             
-                    data.slice(0, 50).forEach((obj) => {
-                        const a = (parseFloat(obj.q_au_1) + parseFloat(obj.q_au_2)) / 2;
-                        const e = parseFloat(obj.e);
-                        const i = THREE.MathUtils.degToRad(parseFloat(obj.i_deg));
-                        const omega = THREE.MathUtils.degToRad(parseFloat(obj.w_deg));
-                        const Omega = THREE.MathUtils.degToRad(parseFloat(obj.node_deg));
+            //         data.slice(0, 50).forEach((obj) => {
+            //             const a = (parseFloat(obj.q_au_1) + parseFloat(obj.q_au_2)) / 2;
+            //             const e = parseFloat(obj.e);
+            //             const i = THREE.MathUtils.degToRad(parseFloat(obj.i_deg));
+            //             const omega = THREE.MathUtils.degToRad(parseFloat(obj.w_deg));
+            //             const Omega = THREE.MathUtils.degToRad(parseFloat(obj.node_deg));
             
-                        // Create sphere
-                        const sphere = new THREE.Mesh(sphereGeometry, 
-                            obj.is_potentially_hazardous_asteroid === 'true' ? hazardousMaterial : nonHazardousMaterial);
+            //             // Create sphere
+            //             const sphere = new THREE.Mesh(sphereGeometry, 
+            //                 obj.is_potentially_hazardous_asteroid === 'true' ? hazardousMaterial : nonHazardousMaterial);
                         
-                        const x = a * (Math.cos(Omega) * Math.cos(omega + i) - Math.sin(Omega) * Math.sin(omega + i) * Math.cos(i));
-                        const y = a * (Math.sin(Omega) * Math.cos(omega + i) + Math.cos(Omega) * Math.sin(omega + i) * Math.cos(i));
-                        const z = a * Math.sin(omega + i) * Math.sin(i);
+            //             const x = a * (Math.cos(Omega) * Math.cos(omega + i) - Math.sin(Omega) * Math.sin(omega + i) * Math.cos(i));
+            //             const y = a * (Math.sin(Omega) * Math.cos(omega + i) + Math.cos(Omega) * Math.sin(omega + i) * Math.cos(i));
+            //             const z = a * Math.sin(omega + i) * Math.sin(i);
             
-                        sphere.position.set(x, y, z);
-                        spheres.push(sphere);
+            //             sphere.position.set(x, y, z);
+            //             spheres.push(sphere);
             
-                        // Create orbit
-                        const orbitPoints = [];
-                        for (let theta = 0; theta <= 2 * Math.PI; theta += 0.1) { // Increased step size
-                            const r = a * (1 - e * e) / (1 + e * Math.cos(theta));
-                            const xOrbit = r * (Math.cos(Omega) * Math.cos(omega + theta) - Math.sin(Omega) * Math.sin(omega + theta) * Math.cos(i));
-                            const yOrbit = r * (Math.sin(Omega) * Math.cos(omega + theta) + Math.cos(Omega) * Math.sin(omega + theta) * Math.cos(i));
-                            const zOrbit = r * Math.sin(omega + theta) * Math.sin(i);
-                            orbitPoints.push(new THREE.Vector3(xOrbit * 50, yOrbit * 50, zOrbit * 50));
-                        }
+            //             // Create orbit
+            //             const orbitPoints = [];
+            //             for (let theta = 0; theta <= 2 * Math.PI; theta += 0.1) { // Increased step size
+            //                 const r = a * (1 - e * e) / (1 + e * Math.cos(theta));
+            //                 const xOrbit = r * (Math.cos(Omega) * Math.cos(omega + theta) - Math.sin(Omega) * Math.sin(omega + theta) * Math.cos(i));
+            //                 const yOrbit = r * (Math.sin(Omega) * Math.cos(omega + theta) + Math.cos(Omega) * Math.sin(omega + theta) * Math.cos(i));
+            //                 const zOrbit = r * Math.sin(omega + theta) * Math.sin(i);
+            //                 orbitPoints.push(new THREE.Vector3(xOrbit * 50, yOrbit * 50, zOrbit * 50));
+            //             }
             
-                        const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
-                        const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
-                        orbits.push(orbit);
-                    });
+            //             const orbitGeometry = new THREE.BufferGeometry().setFromPoints(orbitPoints);
+            //             const orbit = new THREE.Line(orbitGeometry, orbitMaterial);
+            //             orbits.push(orbit);
+            //         });
             
-                    // Batch add to scene
-                    scene.add(...spheres, ...orbits);
+            //         // Batch add to scene
+            //         scene.add(...spheres, ...orbits);
             
-                } catch (error) {
-                    console.error('Error fetching data:', error);
-                }
-            };
-            fetchData()
+            //     } catch (error) {
+            //         console.error('Error fetching data:', error);
+            //     }
+            // };
+            // fetchData()
 
 
 
